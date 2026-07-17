@@ -11,6 +11,13 @@ export function setupAuth(options: AuthSetupOptions): AuthModuleResult {
       accessTokenExpiry: '1h',
       refreshTokenExpiry: '365d'
     },
+    cookie: {
+      name: 'refreshToken',
+      httpOnly: true,
+      secure: true,
+      sameSite: 'None',
+      path: '/'
+    },
     cors: {
       allowOrigins: options.allowOrigins
     },

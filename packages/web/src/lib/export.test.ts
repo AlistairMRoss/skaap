@@ -40,8 +40,8 @@ describe('animalsToRows', () => {
 })
 
 describe('buildWorkbook', () => {
-  it('honours exactly the passed-in filtered set', () => {
-    const workbook = buildWorkbook([animals[0]!])
+  it('honours exactly the passed-in filtered set', async () => {
+    const workbook = await buildWorkbook([animals[0]!])
     const sheet = workbook.Sheets['Animals']!
     const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })
     expect(rows[0]).toEqual([

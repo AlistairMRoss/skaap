@@ -59,7 +59,7 @@ watch(
     <p v-else-if="error" class="mt-6 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
 
     <div v-else-if="detail" class="mt-4 space-y-5">
-      <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section class="card">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="text-xl font-semibold text-slate-900">#{{ detail.animal.id }}</span>
@@ -98,7 +98,7 @@ watch(
               <RouterLink
                 v-if="detail.animal.motherId"
                 :to="{ name: 'animal-detail', params: { id: detail.animal.motherId } }"
-                class="text-green-700 underline"
+                class="app-link underline"
               >
                 #{{ detail.animal.motherId }}
               </RouterLink>
@@ -128,7 +128,7 @@ watch(
             <span class="text-slate-400">{{ index === 0 ? 'Mother' : index === 1 ? 'Grandmother' : `Gen +${index + 1}` }}</span>
             <RouterLink
               :to="{ name: 'animal-detail', params: { id: ancestor.id } }"
-              class="rounded-lg border border-slate-200 bg-white px-3 py-1 font-medium text-green-700 hover:bg-slate-50"
+              class="rounded-lg border border-slate-200 bg-white px-3 py-1 font-medium text-brand-700 hover:bg-slate-50"
             >
               #{{ ancestor.id }} · {{ ancestor.colour }}
             </RouterLink>

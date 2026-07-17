@@ -69,13 +69,13 @@ function restart(): void {
 </script>
 
 <template>
-  <div class="mx-auto mt-12 max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-    <h1 class="text-center text-2xl font-semibold text-slate-900">Create your account</h1>
+  <div class="mx-auto mt-12 max-w-md card p-6">
+    <h1 class="text-center text-2xl font-bold tracking-tight text-slate-900">Create your account</h1>
     <p class="mt-1 text-center text-slate-500">We'll email you a code to confirm it's you</p>
 
     <form v-if="step === 'details'" class="mt-6 space-y-4" @submit.prevent="onSendCode">
       <div>
-        <label for="email" class="block text-sm font-medium text-slate-700">Email address</label>
+        <label for="email" class="field-label">Email address</label>
         <input
           id="email"
           v-model="email"
@@ -83,11 +83,11 @@ function restart(): void {
           autocomplete="email"
           required
           placeholder="farmer@example.com"
-          class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 px-4 py-3 text-base focus:border-green-600 focus:outline-none"
+          class="mt-1 input-field"
         />
       </div>
       <div>
-        <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
+        <label for="password" class="field-label">Password</label>
         <input
           id="password"
           v-model="password"
@@ -95,11 +95,11 @@ function restart(): void {
           autocomplete="new-password"
           required
           placeholder="At least 8 characters"
-          class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 px-4 py-3 text-base focus:border-green-600 focus:outline-none"
+          class="mt-1 input-field"
         />
       </div>
       <div>
-        <label for="confirm" class="block text-sm font-medium text-slate-700">Confirm password</label>
+        <label for="confirm" class="field-label">Confirm password</label>
         <input
           id="confirm"
           v-model="confirmPassword"
@@ -107,21 +107,17 @@ function restart(): void {
           autocomplete="new-password"
           required
           placeholder="Re-enter your password"
-          class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 px-4 py-3 text-base focus:border-green-600 focus:outline-none"
+          class="mt-1 input-field"
         />
       </div>
-      <button
-        type="submit"
-        :disabled="busy || !detailsValid"
-        class="min-h-12 w-full rounded-lg bg-green-700 px-4 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-50"
-      >
+      <button type="submit" :disabled="busy || !detailsValid" class="btn-primary w-full">
         {{ busy ? 'Sending…' : 'Send me a code' }}
       </button>
     </form>
 
     <form v-else class="mt-6 space-y-4" @submit.prevent="onVerify">
       <div>
-        <label for="code" class="block text-sm font-medium text-slate-700">6-digit code</label>
+        <label for="code" class="field-label">6-digit code</label>
         <input
           id="code"
           v-model="code"
@@ -129,14 +125,10 @@ function restart(): void {
           autocomplete="one-time-code"
           required
           placeholder="123456"
-          class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 px-4 py-3 text-center text-2xl tracking-widest focus:border-green-600 focus:outline-none"
+          class="mt-1 input-field text-center text-2xl tracking-widest"
         />
       </div>
-      <button
-        type="submit"
-        :disabled="busy || code.trim().length === 0"
-        class="min-h-12 w-full rounded-lg bg-green-700 px-4 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-50"
-      >
+      <button type="submit" :disabled="busy || code.trim().length === 0" class="btn-primary w-full">
         {{ busy ? 'Creating account…' : 'Confirm and create account' }}
       </button>
       <button
@@ -148,14 +140,12 @@ function restart(): void {
       </button>
     </form>
 
-    <p v-if="message" class="mt-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{{ message }}</p>
+    <p v-if="message" class="mt-4 rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-800">{{ message }}</p>
     <p v-if="error" class="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
 
     <p class="mt-6 text-center text-sm text-slate-500">
       Already have an account?
-      <RouterLink :to="{ name: 'login' }" class="font-medium text-green-700 hover:text-green-800">
-        Sign in
-      </RouterLink>
+      <RouterLink :to="{ name: 'login' }" class="app-link">Sign in</RouterLink>
     </p>
   </div>
 </template>

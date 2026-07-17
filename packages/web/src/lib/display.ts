@@ -15,7 +15,7 @@ export const STATUS_LABELS: Record<Status, string> = {
 export function statusBadgeClass(status: Status): string {
   switch (status) {
     case 'alive':
-      return 'bg-green-100 text-green-800'
+      return 'bg-brand-100 text-brand-800'
     case 'sold':
       return 'bg-amber-100 text-amber-800'
     case 'deceased':

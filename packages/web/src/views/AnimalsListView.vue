@@ -19,6 +19,7 @@ const statusOptions = STATUSES
 const pendingDelete = ref<AnimalListItem | null>(null)
 const deleteError = ref<string | null>(null)
 const deleting = ref(false)
+const exporting = ref(false)
 
 const canExport = computed(() => filtered.value.length > 0)
 
@@ -51,14 +52,19 @@ async function confirmDelete(): Promise<void> {
   }
 }
 
-function onExport(): void {
-  if (!canExport.value) return
-  const activeStatus: Status | undefined = status.value === '' ? undefined : status.value
-  downloadAnimalsXlsx(
-    filtered.value,
-    { status: activeStatus, q: search.value.trim() || undefined },
-    todayIso()
-  )
+async function onExport(): Promise<void> {
+  if (!canExport.value || exporting.value) return
+  exporting.value = true
+  try {
+    const activeStatus: Status | undefined = status.value === '' ? undefined : status.value
+    await downloadAnimalsXlsx(
+      filtered.value,
+      { status: activeStatus, q: search.value.trim() || undefined },
+      todayIso()
+    )
+  } finally {
+    exporting.value = false
+  }
 }
 </script>
 
@@ -66,12 +72,7 @@ function onExport(): void {
   <div>
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-semibold text-slate-900">Flock</h1>
-      <RouterLink
-        :to="{ name: 'animal-new' }"
-        class="min-h-11 rounded-lg bg-green-700 px-4 py-2 font-semibold text-white hover:bg-green-800"
-      >
-        + Add
-      </RouterLink>
+      <RouterLink :to="{ name: 'animal-new' }" class="btn-primary">+ Add</RouterLink>
     </div>
 
     <div class="mt-4 space-y-3">
@@ -79,23 +80,15 @@ function onExport(): void {
         v-model="search"
         type="search"
         placeholder="Search by tag, colour, breed, notes…"
-        class="min-h-12 w-full rounded-lg border border-slate-300 px-4 py-3 text-base focus:border-green-600 focus:outline-none"
+        class="input-field"
       />
-      <div class="flex gap-3">
-        <select
-          v-model="status"
-          class="min-h-12 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-3 text-base focus:border-green-600 focus:outline-none"
-        >
+      <div class="flex flex-col gap-3 sm:flex-row">
+        <select v-model="status" class="select-field sm:flex-1">
           <option value="">All statuses</option>
           <option v-for="option in statusOptions" :key="option" :value="option">{{ STATUS_LABELS[option] }}</option>
         </select>
-        <button
-          type="button"
-          :disabled="!canExport"
-          class="min-h-12 rounded-lg border border-green-700 px-4 py-3 font-medium text-green-800 hover:bg-green-50 disabled:opacity-40"
-          @click="onExport"
-        >
-          Export to Excel
+        <button type="button" :disabled="!canExport || exporting" class="btn-outline" @click="onExport">
+          {{ exporting ? 'Exporting…' : 'Export to Excel' }}
         </button>
       </div>
     </div>
@@ -108,11 +101,7 @@ function onExport(): void {
     </p>
 
     <ul v-else class="mt-4 space-y-3">
-      <li
-        v-for="animal in filtered"
-        :key="animal.id"
-        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-      >
+      <li v-for="animal in filtered" :key="animal.id" class="card">
         <div class="flex items-start justify-between gap-3">
           <RouterLink :to="{ name: 'animal-detail', params: { id: animal.id } }" class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
@@ -161,19 +150,8 @@ function onExport(): void {
         <p class="mt-2 text-sm text-slate-600">This cannot be undone.</p>
         <p v-if="deleteError" class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ deleteError }}</p>
         <div class="mt-5 flex gap-3">
-          <button
-            type="button"
-            class="min-h-12 flex-1 rounded-lg border border-slate-300 px-4 py-3 font-medium text-slate-700 hover:bg-slate-50"
-            @click="closeDelete"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            :disabled="deleting"
-            class="min-h-12 flex-1 rounded-lg bg-red-600 px-4 py-3 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-            @click="confirmDelete"
-          >
+          <button type="button" class="btn-secondary flex-1" @click="closeDelete">Cancel</button>
+          <button type="button" :disabled="deleting" class="btn-danger flex-1" @click="confirmDelete">
             {{ deleting ? 'Deleting…' : 'Delete' }}
           </button>
         </div>

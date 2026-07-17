@@ -32,13 +32,13 @@ async function onLogin(): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto mt-12 max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-    <h1 class="text-center text-2xl font-semibold text-slate-900">Skaap</h1>
+  <div class="mx-auto mt-12 max-w-md card p-6">
+    <h1 class="text-center text-3xl font-bold tracking-tight text-brand-700">Skaap</h1>
     <p class="mt-1 text-center text-slate-500">Sign in to manage your flock</p>
 
     <form class="mt-6 space-y-4" @submit.prevent="onLogin">
       <div>
-        <label for="email" class="block text-sm font-medium text-slate-700">Email address</label>
+        <label for="email" class="field-label">Email address</label>
         <input
           id="email"
           v-model="email"
@@ -46,11 +46,11 @@ async function onLogin(): Promise<void> {
           autocomplete="email"
           required
           placeholder="farmer@example.com"
-          class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 px-4 py-3 text-base focus:border-green-600 focus:outline-none"
+          class="mt-1 input-field"
         />
       </div>
       <div>
-        <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
+        <label for="password" class="field-label">Password</label>
         <input
           id="password"
           v-model="password"
@@ -58,13 +58,13 @@ async function onLogin(): Promise<void> {
           autocomplete="current-password"
           required
           placeholder="Your password"
-          class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 px-4 py-3 text-base focus:border-green-600 focus:outline-none"
+          class="mt-1 input-field"
         />
       </div>
       <button
         type="submit"
         :disabled="busy || email.trim().length === 0 || password.length === 0"
-        class="min-h-12 w-full rounded-lg bg-green-700 px-4 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-50"
+        class="btn-primary w-full"
       >
         {{ busy ? 'Signing in…' : 'Sign in' }}
       </button>
@@ -74,9 +74,7 @@ async function onLogin(): Promise<void> {
 
     <p class="mt-6 text-center text-sm text-slate-500">
       No account yet?
-      <RouterLink :to="{ name: 'signup' }" class="font-medium text-green-700 hover:text-green-800">
-        Create one
-      </RouterLink>
+      <RouterLink :to="{ name: 'signup' }" class="app-link">Create one</RouterLink>
     </p>
   </div>
 </template>

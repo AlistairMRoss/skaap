@@ -117,7 +117,7 @@ async function onSubmit(): Promise<void> {
 
     <form v-else class="mt-4 space-y-4" @submit.prevent="onSubmit">
       <div>
-        <label for="tag" class="block text-sm font-medium text-slate-700">Tag number</label>
+        <label for="tag" class="field-label">Tag number</label>
         <input
           id="tag"
           v-model.number="form.id"
@@ -126,38 +126,38 @@ async function onSubmit(): Promise<void> {
           step="1"
           :disabled="isEdit"
           required
-          class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 px-4 py-3 text-base focus:border-green-600 focus:outline-none disabled:bg-slate-100"
+          class="mt-1 input-field disabled:bg-slate-100"
         />
       </div>
 
       <div>
-        <label for="colour" class="block text-sm font-medium text-slate-700">Colour / marking</label>
+        <label for="colour" class="field-label">Colour / marking</label>
         <input
           id="colour"
           v-model="form.colour"
           type="text"
           required
-          class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 px-4 py-3 text-base focus:border-green-600 focus:outline-none"
+          class="mt-1 input-field"
         />
       </div>
 
       <div class="flex gap-3">
         <div class="flex-1">
-          <label for="sex" class="block text-sm font-medium text-slate-700">Sex</label>
+          <label for="sex" class="field-label">Sex</label>
           <select
             id="sex"
             v-model="form.sex"
-            class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base focus:border-green-600 focus:outline-none"
+            class="mt-1 select-field"
           >
             <option v-for="option in SEXES" :key="option" :value="option">{{ SEX_LABELS[option] }}</option>
           </select>
         </div>
         <div class="flex-1">
-          <label for="status" class="block text-sm font-medium text-slate-700">Status</label>
+          <label for="status" class="field-label">Status</label>
           <select
             id="status"
             v-model="form.status"
-            class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base focus:border-green-600 focus:outline-none"
+            class="mt-1 select-field"
           >
             <option v-for="option in STATUSES" :key="option" :value="option">{{ STATUS_LABELS[option] }}</option>
           </select>
@@ -166,32 +166,32 @@ async function onSubmit(): Promise<void> {
 
       <div class="flex gap-3">
         <div class="flex-1">
-          <label for="breed" class="block text-sm font-medium text-slate-700">Breed</label>
+          <label for="breed" class="field-label">Breed</label>
           <input
             id="breed"
             v-model="form.breed"
             type="text"
-            class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 px-4 py-3 text-base focus:border-green-600 focus:outline-none"
+            class="mt-1 input-field"
           />
         </div>
         <div class="flex-1">
-          <label for="dob" class="block text-sm font-medium text-slate-700">Date of birth</label>
+          <label for="dob" class="field-label">Date of birth</label>
           <input
             id="dob"
             v-model="form.dob"
             type="date"
-            class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 px-4 py-3 text-base focus:border-green-600 focus:outline-none"
+            class="mt-1 input-field"
           />
         </div>
       </div>
 
       <div class="flex gap-3">
         <div class="flex-1">
-          <label for="mother" class="block text-sm font-medium text-slate-700">Mother</label>
+          <label for="mother" class="field-label">Mother</label>
           <select
             id="mother"
             v-model="form.motherId"
-            class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base focus:border-green-600 focus:outline-none"
+            class="mt-1 select-field"
           >
             <option value="">None</option>
             <option v-for="option in parentOptions" :key="option.id" :value="option.id">
@@ -200,11 +200,11 @@ async function onSubmit(): Promise<void> {
           </select>
         </div>
         <div class="flex-1">
-          <label for="father" class="block text-sm font-medium text-slate-700">Father</label>
+          <label for="father" class="field-label">Father</label>
           <select
             id="father"
             v-model="form.fatherId"
-            class="mt-1 min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base focus:border-green-600 focus:outline-none"
+            class="mt-1 select-field"
           >
             <option value="">None</option>
             <option v-for="option in parentOptions" :key="option.id" :value="option.id">
@@ -215,22 +215,18 @@ async function onSubmit(): Promise<void> {
       </div>
 
       <div>
-        <label for="notes" class="block text-sm font-medium text-slate-700">Notes</label>
+        <label for="notes" class="field-label">Notes</label>
         <textarea
           id="notes"
           v-model="form.notes"
           rows="3"
-          class="mt-1 w-full rounded-lg border border-slate-300 px-4 py-3 text-base focus:border-green-600 focus:outline-none"
+          class="mt-1 textarea-field"
         ></textarea>
       </div>
 
       <p v-if="error" class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
 
-      <button
-        type="submit"
-        :disabled="saving"
-        class="min-h-12 w-full rounded-lg bg-green-700 px-4 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-50"
-      >
+      <button type="submit" :disabled="saving" class="btn-primary w-full">
         {{ saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add animal' }}
       </button>
     </form>

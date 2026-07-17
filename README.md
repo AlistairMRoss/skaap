@@ -77,6 +77,21 @@ back to echoing `http://localhost:5173`. The frontend URL can't be wired in
 automatically because it would create a circular dependency between the APIs and
 the static site.
 
+### Session cookie (cross-site)
+
+The refresh token is stored in an `HttpOnly` cookie set by the auth API and read
+by `POST /auth/refresh` (which keeps the user signed in across reloads for the
+365-day refresh lifetime). Because the frontend (CloudFront) and the auth API
+(API Gateway) are on **different domains**, that cookie is cross-site, so
+`auth.ts` configures it as `SameSite=None; Secure` — a `Lax` cookie is never sent
+on a cross-domain `fetch`, which otherwise makes `/auth/refresh` return `401`.
+
+Caveat: `SameSite=None` makes it a **third-party** cookie, which some browsers
+block by default (e.g. Safari, Chrome incognito). If refresh is blocked there,
+the robust fix is to serve the frontend and the auth API from the **same site**
+(a custom domain such as `app.example.com` + `api.example.com`, or route
+`/auth/*` through the CloudFront distribution) so the cookie is first-party.
+
 The module deploys its own API Gateway, DynamoDB table, and a Lambda **JWT
 authorizer**. `sst.config.ts` attaches that authorizer to every `/animals`
 route, so the authorizer injects `userId` and a JSON-stringified `roles` array

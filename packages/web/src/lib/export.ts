@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx'
+import type { WorkBook } from 'xlsx'
 import type { AnimalListItem, Status } from '@sheep/core'
 
 export interface ExportFilter {
@@ -36,7 +36,8 @@ export function animalsToRows(animals: AnimalListItem[]): ExportCell[][] {
   ])
 }
 
-export function buildWorkbook(animals: AnimalListItem[]): XLSX.WorkBook {
+export async function buildWorkbook(animals: AnimalListItem[]): Promise<WorkBook> {
+  const XLSX = await import('xlsx')
   const aoa: ExportCell[][] = [[...EXPORT_HEADERS], ...animalsToRows(animals)]
   const worksheet = XLSX.utils.aoa_to_sheet(aoa)
   const workbook = XLSX.utils.book_new()
@@ -52,7 +53,12 @@ export function exportFilename(filter: ExportFilter, date: string): string {
   return `${parts.join('-')}.xlsx`
 }
 
-export function downloadAnimalsXlsx(animals: AnimalListItem[], filter: ExportFilter, date: string): void {
-  const workbook = buildWorkbook(animals)
+export async function downloadAnimalsXlsx(
+  animals: AnimalListItem[],
+  filter: ExportFilter,
+  date: string
+): Promise<void> {
+  const XLSX = await import('xlsx')
+  const workbook = await buildWorkbook(animals)
   XLSX.writeFile(workbook, exportFilename(filter, date))
 }
