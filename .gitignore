@@ -1,0 +1,12 @@
+node_modules
+.sst
+.yarn
+dist
+sst-env.d.ts
+.env
+.env.*
+*.log
+.DS_Store
+packages/web/dist
+.vite
+coverage
