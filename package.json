@@ -8,21 +8,21 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "sst dev",
-    "deploy": "sst deploy",
-    "typecheck": "yarn workspace @sheep/core typecheck && yarn workspace @sheep/functions typecheck && yarn workspace @sheep/web typecheck",
-    "typecheck:infra": "tsc --noEmit -p tsconfig.infra.json",
-    "lint": "eslint .",
-    "test": "yarn workspace @sheep/functions test && yarn workspace @sheep/web test",
     "build": "yarn workspace @sheep/web build",
-    "seed": "sst shell tsx scripts/seed.ts"
+    "deploy": "sst deploy",
+    "dev": "sst dev",
+    "lint": "eslint .",
+    "seed": "sst shell tsx scripts/seed.ts",
+    "test": "yarn workspace @sheep/functions test && yarn workspace @sheep/web test",
+    "typecheck": "yarn workspace @sheep/core typecheck && yarn workspace @sheep/functions typecheck && yarn workspace @sheep/web typecheck",
+    "typecheck:infra": "tsc --noEmit -p tsconfig.infra.json"
   },
   "devDependencies": {
     "@alistairmross/auth": "^2.0.74",
     "@aws-sdk/client-dynamodb": "^3.700.0",
     "@aws-sdk/lib-dynamodb": "^3.700.0",
     "@eslint/js": "^9.17.0",
-    "@types/aws-lambda": "^8.10.147",
+    "@types/aws-lambda": "8.10.162",
     "@types/node": "^22.10.2",
     "eslint": "^9.17.0",
     "eslint-plugin-vue": "^9.32.0",
@@ -32,5 +32,8 @@
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.1",
     "vue-eslint-parser": "^9.4.3"
+  },
+  "dependencies": {
+    "sst": "4.17.1"
   }
 }

@@ -21,6 +21,7 @@ export function setupAuth(options: AuthSetupOptions): AuthModuleResult {
     password: {
       minLength: 8,
       emailFromAddress: options.emailFromAddress
-    }
+    },
+    handlerBasePath: 'node_modules/@alistairmross/auth/dist/src/backend/handlers'
   })
 }

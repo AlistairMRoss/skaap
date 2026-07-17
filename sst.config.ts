@@ -7,9 +7,15 @@ export default $config({
   app(input) {
     return {
       name: 'sheep-tracker',
-      removal: input?.stage === 'production' ? 'retain' : 'remove',
-      protect: input?.stage === 'production',
-      home: 'aws'
+      removal: input?.stage === 'prod' ? 'retain' : 'remove',
+      protect: input?.stage === 'prod',
+      home: 'aws',
+      providers: {
+        aws: input.stage === 'prod' ? {
+          region: "af-south-1",
+          profile: "personal"
+        } : {}
+      }
     }
   },
   async run() {
