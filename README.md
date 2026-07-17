@@ -49,10 +49,33 @@ and `auth.ts` imports from `@alistairmross/auth/infrastructure`.
 `auth.ts` calls `createAuthModule(...)` with:
 
 - **JWT** — 1h access token, 365d refresh token
-- **Email (SES)** — `fromAddress` used for password-reset emails
+- **Email (SES)** — `fromAddress` used for signup codes and password-reset emails
+- **OTP (email)** — enables `POST /auth/otp/send` and `POST /auth/otp/verify`, used
+  for signup: verifying the code **creates the account** (this is the only
+  self-service account-creation path the module offers)
 - **Password** — enables the email + password routes (`POST /auth/password/login`,
   `PUT /auth/password`, `POST /auth/password/forgot`, `POST /auth/password/reset`)
 - **CORS** — restricted to the configured allowed origins
+
+### Sign up and sign in
+
+- **Sign up** (`/signup`): the user enters an email and chooses a password; the
+  module emails a 6-digit code; entering it verifies the email, creates the
+  account (via `POST /auth/otp/verify`), and immediately sets the chosen password
+  (via `PUT /auth/password`). New accounts have **no roles**, so the user lands on
+  the "contact an admin" page until promoted (see below).
+- **Sign in** (`/login`): email + password (`POST /auth/password/login`).
+
+### CORS / allowed origins
+
+Both the app API and the auth API only accept browser requests from origins in
+their allowlist. The allowlist is `['http://localhost:5173', ...PRODUCTION_ORIGINS]`
+in `sst.config.ts`. **After the first deploy, add your deployed frontend origin
+(the CloudFront URL, e.g. `https://xxxx.cloudfront.net`) to `PRODUCTION_ORIGINS`
+and redeploy** — otherwise the auth API rejects the browser's preflight and falls
+back to echoing `http://localhost:5173`. The frontend URL can't be wired in
+automatically because it would create a circular dependency between the APIs and
+the static site.
 
 The module deploys its own API Gateway, DynamoDB table, and a Lambda **JWT
 authorizer**. `sst.config.ts` attaches that authorizer to every `/animals`
@@ -99,23 +122,23 @@ The app requires the `admin` role. An authenticated user **without** `admin`
 sees only a "please contact an admin" page, and every API endpoint rejects
 non-admin and unauthenticated requests server-side.
 
-New users default to no roles, so an admin must be provisioned directly against
-the auth module's DynamoDB table:
+New accounts default to no roles, so the `admin` role is granted manually in the
+**AWS Console** against the auth module's DynamoDB table (the module names it
+`AuthAndUser`; the deployed table appears in DynamoDB as something like
+`sheep-tracker-<stage>-AuthAndUserTable...`):
 
-1. **Provision the admin user with a password.** The simplest path is the auth
-   module's internal `migrationFunction`, invoked with the AWS SDK, passing
-   `roles: ['admin']` and either a bcrypt `passwordHash` or no password.
-   Alternatively, create the user and set roles, then set an initial password
-   via the forgot/reset flow:
-   - `POST /auth/password/forgot` with `{ "email": "farmer@example.com" }`
-     (emails a reset token — or returns it directly if no SES sender is set)
-   - `POST /auth/password/reset` with the token and the new password
-2. **Ensure `roles` contains `admin`.** If the user record's `roles` attribute
-   does not already include `admin`, set it on the user item in the auth
-   DynamoDB table (e.g. `roles: ["admin"]`).
+1. Sign up in the app first so the user record exists.
+2. In the AWS Console, open **DynamoDB → Tables → (the AuthAndUser table) →
+   Explore table items**.
+3. Find the user's **profile** item: `pk = USER#<userId>`, `sk = PROFILE`. If you
+   don't know the `userId`, filter/scan for the item whose `email` matches, or
+   query the email index (`gsi4`) with `gsi4pk = EMAIL#<email>` — the `gsi4sk`
+   value is `USER#<userId>`.
+4. Edit that item's `roles` attribute (a String Set / list) to include `admin`
+   (e.g. `["admin"]`), and save.
 
-Once the user has a password and the `admin` role, they log in on the app's
-login page with their email and password.
+The change takes effect on the user's next login (or token refresh), since roles
+are read from a freshly issued token. After that they can use the app.
 
 ## Data model
 

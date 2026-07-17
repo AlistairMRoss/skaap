@@ -71,5 +71,12 @@ async function onLogin(): Promise<void> {
     </form>
 
     <p v-if="error" class="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ error }}</p>
+
+    <p class="mt-6 text-center text-sm text-slate-500">
+      No account yet?
+      <RouterLink :to="{ name: 'signup' }" class="font-medium text-green-700 hover:text-green-800">
+        Create one
+      </RouterLink>
+    </p>
   </div>
 </template>

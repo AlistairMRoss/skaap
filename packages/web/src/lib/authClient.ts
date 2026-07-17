@@ -22,6 +22,9 @@ export interface RefreshResult {
 
 export interface AuthClient {
   login(email: string, password: string): Promise<LoginResult>
+  sendCode(email: string): Promise<void>
+  verifyCode(email: string, code: string): Promise<LoginResult>
+  setPassword(accessToken: string, newPassword: string): Promise<void>
   me(accessToken: string): Promise<AuthUser>
   refresh(): Promise<RefreshResult>
   logout(accessToken: string): Promise<void>
@@ -52,6 +55,25 @@ export const emailPasswordAuthClient: AuthClient = {
     return call<LoginResult>('/auth/password/login', {
       method: 'POST',
       body: JSON.stringify({ email, password })
+    })
+  },
+  async sendCode(email) {
+    await call('/auth/otp/send', {
+      method: 'POST',
+      body: JSON.stringify({ identifier: email, channel: 'email' })
+    })
+  },
+  async verifyCode(email, code) {
+    return call<LoginResult>('/auth/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({ identifier: email, code })
+    })
+  },
+  async setPassword(accessToken, newPassword) {
+    await call('/auth/password', {
+      method: 'PUT',
+      headers: { authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ newPassword })
     })
   },
   async me(accessToken) {

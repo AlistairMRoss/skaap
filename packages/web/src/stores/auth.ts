@@ -36,6 +36,17 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = result.user
   }
 
+  async function sendCode(email: string): Promise<void> {
+    await authClient.sendCode(email)
+  }
+
+  async function completeSignup(email: string, code: string, password: string): Promise<void> {
+    const result = await authClient.verifyCode(email, code)
+    accessToken.value = result.accessToken
+    user.value = result.user
+    await authClient.setPassword(result.accessToken, password)
+  }
+
   async function logout(): Promise<void> {
     const token = accessToken.value
     accessToken.value = null
@@ -49,5 +60,17 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { accessToken, user, ready, isAuthenticated, isAdmin, refresh, init, login, logout }
+  return {
+    accessToken,
+    user,
+    ready,
+    isAuthenticated,
+    isAdmin,
+    refresh,
+    init,
+    login,
+    sendCode,
+    completeSignup,
+    logout
+  }
 })

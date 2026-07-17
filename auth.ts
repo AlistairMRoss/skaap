@@ -18,6 +18,10 @@ export function setupAuth(options: AuthSetupOptions): AuthModuleResult {
       provider: 'ses',
       fromAddress: options.emailFromAddress
     },
+    otp: {
+      methods: ['email'],
+      emailFromAddress: options.emailFromAddress
+    },
     password: {
       minLength: 8,
       emailFromAddress: options.emailFromAddress
