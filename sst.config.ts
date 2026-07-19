@@ -1,7 +1,7 @@
 /// <reference path="./.sst/platform/config.d.ts" />
 
 const PRODUCTION_ORIGINS: string[] = ['https://d3dkuvj2mr3aim.cloudfront.net']
-const EMAIL_FROM_ADDRESS = 'noreply@example.com'
+const EMAIL_FROM_ADDRESS = 'noreply@notifications.easier-equities.co.za'
 
 export default $config({
   app(input) {
