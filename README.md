@@ -157,23 +157,40 @@ are read from a freshly issued token. After that they can use the app.
 
 ## Data model
 
-Each animal (a "lamb" and a "sheep" are the same entity) has: `id` (farmer's tag
-number, unique, primary identifier), `colour`, `sex` (`ewe` | `ram` | `wether`),
-optional `breed`, optional `dob`, optional `motherId`, optional `fatherId`,
-`status` (`alive` | `sold` | `deceased`, default `alive`), optional `notes`, and
-`createdAt` / `updatedAt` timestamps.
+There are two kinds of record: **sheep** (full herd members) and **lambs**
+(offspring not yet in the herd).
+
+- A **sheep** has: `id` (farmer's tag number, unique, primary identifier),
+  `colour`, `sex` (`ewe` | `ram` | `wether`), optional `breed`, optional `dob`,
+  optional `motherId` (set only when the sheep was promoted from a lamb),
+  `status` (`alive` | `sold` | `deceased`, default `alive`), optional `notes`,
+  and `createdAt` / `updatedAt`.
+- A **lamb** has only: a generated `lambId`, its `motherId`, `sex`, `dob`
+  (birth date), a `promoted` flag, and (once promoted) `promotedToId`.
+
+**Lifecycle.** Lambs are added to a **ewe** from that sheep's detail page (they
+are *not* part of the herd and carry no tag or colour). A lamb can be
+**promoted** to a full sheep — you set a tag number and colour, and it joins the
+herd with `motherId` pointing at its mother (so lineage still works). After
+promotion the lamb remains under its mother as **greyed-out history** linking to
+the new sheep. There is no father field — parentage is captured only through the
+mother → lamb → promote flow.
 
 ### DynamoDB single-table design
 
 Table `SheepTracker`, keys `pk` / `sk`, on-demand billing:
 
-- **Animal item**: `pk = ANIMAL#<id>`, `sk = ANIMAL#<id>`
-- **GSI1** (list all, sorted): `gsi1pk = "ALL#ANIMAL"`, `gsi1sk = <id zero-padded>`
-- **GSI2** (lambs by mother, only when `motherId` is set): `gsi2pk = MOTHER#<motherId>`,
-  `gsi2sk = ANIMAL#<id>`
+- **Sheep item**: `pk = ANIMAL#<id>`, `sk = ANIMAL#<id>`, `gsi1pk = "ALL#ANIMAL"`,
+  `gsi1sk = <id zero-padded>`.
+- **Lamb item** (stored under its mother): `pk = ANIMAL#<motherId>`,
+  `sk = LAMB#<lambId>`, `gsi1pk = "ALL#LAMB"`, `gsi1sk = <lambId>`.
+- **GSI1** lists all sheep (`ALL#ANIMAL`, sorted by tag) and, in a separate
+  partition, all lambs (`ALL#LAMB`) — the latter is used to compute each ewe's
+  current-lamb count on the flock list.
 
-Lineage is resolved by walking `motherId` upward with sequential gets, capped at
-a fixed depth to avoid runaway loops.
+A ewe's lambs are read with one `begins_with(sk, "LAMB#")` query on her item
+collection. Lineage is resolved by walking `motherId` upward with sequential
+gets, capped at a fixed depth.
 
 ## API
 
@@ -183,33 +200,38 @@ shape (`{ "error": { "code", "message" } }`) with explicit `400` / `401` / `403`
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/animals` | List all (GSI1); optional `status` and free-text `q` filters |
-| GET | `/animals/{id}` | One animal, including its lambs and lineage chain |
-| POST | `/animals` | Create (with validation) |
-| PUT | `/animals/{id}` | Update |
+| GET | `/animals` | List all sheep; optional `status` and free-text `q` filters |
+| GET | `/animals/{id}` | One sheep, including its lambs and lineage chain |
+| POST | `/animals` | Create a sheep (tag `id` required + unique) |
+| PUT | `/animals/{id}` | Update a sheep |
 | DELETE | `/animals/{id}` | Delete (see behavior below) |
-| GET | `/animals/{id}/lambs` | Direct lambs (GSI2) |
+| GET | `/animals/{id}/lambs` | A ewe's lambs (current + promoted history) |
+| POST | `/animals/{id}/lambs` | Add a lamb (sex + dob); ewes only |
+| PUT | `/animals/{id}/lambs/{lambId}` | Edit a lamb's sex/dob |
+| DELETE | `/animals/{id}/lambs/{lambId}` | Remove a lamb |
+| POST | `/animals/{id}/lambs/{lambId}/promote` | Promote a lamb to a sheep (tag + colour) |
 | GET | `/animals/{id}/lineage` | Ancestry up the mother line |
 
-Validation: `id` is required and unique; a `motherId` / `fatherId` that does not
-reference an existing animal is rejected; an animal cannot be its own
-mother/father; and cycles in the mother chain are rejected on update.
+Validation: a sheep's `id` is required and unique; lambs can only be added to
+**ewes**; a lamb's tag must be unique when promoted; an already-promoted lamb
+cannot be promoted again.
 
 ### Delete behavior
 
-Deleting an animal that still has lambs is **rejected** with `409 CONFLICT`. The
-app does not silently orphan lambs — reassign or remove an animal's lambs before
-deleting it.
+Deleting a ewe that still has **current (un-promoted) lambs** is **rejected**
+with `409 CONFLICT` — promote or remove them first. If only promoted-history
+lambs remain, they are cleaned up and the sheep is deleted.
 
 ## Excel export
 
-The animals list has an **Export to Excel** button that generates an `.xlsx`
+The flock list has an **Export to Excel** button that generates an `.xlsx`
 **client-side** with SheetJS from exactly the rows currently shown — it honors
 the active search and status filters. Columns: ID, Colour, Sex, Breed, DOB,
-Mother tag, Father tag, Status, Lamb count, Notes. The filename includes the date
-and a hint of the active filter (e.g. `sheep-tracker-alive-2026-07-16.xlsx`). The
-button is disabled when the filtered result set is empty. The export mapping
-lives in `packages/web/src/lib/export.ts` and is covered by a unit test.
+Mother tag, Status, Lamb count, Notes. The filename includes the date and a hint
+of the active filter (e.g. `skaap-alive-2026-07-16.xlsx`). The button is disabled
+when the filtered result set is empty. SheetJS is lazy-loaded only on export, so
+it doesn't weigh down the flock list. The export mapping lives in
+`packages/web/src/lib/export.ts` and is covered by a unit test.
 
 ## Seed data (optional)
 
@@ -217,9 +239,9 @@ lives in `packages/web/src/lib/export.ts` and is covered by a unit test.
 yarn seed
 ```
 
-Runs `sst shell tsx scripts/seed.ts`, inserting a handful of example animals with
-a mother/lamb chain (a matriarch, a daughter, and her lambs) so the lineage and
-lambs views have something to show.
+Runs `sst shell tsx scripts/seed.ts`, inserting a few sheep plus current and
+promoted lambs (a matriarch with lambs, a promoted daughter, a grand-lamb) so the
+lambs list, greyed promotion history, and lineage all have something to show.
 
 ## Scripts
 

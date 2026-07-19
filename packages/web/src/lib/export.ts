@@ -13,7 +13,6 @@ export const EXPORT_HEADERS = [
   'Breed',
   'DOB',
   'Mother tag',
-  'Father tag',
   'Status',
   'Lamb count',
   'Notes'
@@ -29,7 +28,6 @@ export function animalsToRows(animals: AnimalListItem[]): ExportCell[][] {
     animal.breed ?? '',
     animal.dob ?? '',
     animal.motherId ?? '',
-    animal.fatherId ?? '',
     animal.status,
     animal.lambCount,
     animal.notes ?? ''

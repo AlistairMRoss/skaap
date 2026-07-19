@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import type { AnimalCreateInput, AnimalListItem, AnimalUpdateInput, Sex, Status } from '@sheep/core'
+import type { AnimalCreateInput, AnimalUpdateInput, Sex, Status } from '@sheep/core'
 import { SEXES, STATUSES } from '@sheep/core'
 import { useAnimalsStore } from '../stores/animals'
 import { animalsApi } from '../lib/animalsApi'
@@ -21,8 +21,6 @@ const form = reactive({
   sex: 'ewe' as Sex,
   breed: '',
   dob: '',
-  motherId: '' as number | '',
-  fatherId: '' as number | '',
   status: 'alive' as Status,
   notes: ''
 })
@@ -30,10 +28,6 @@ const form = reactive({
 const loading = ref(true)
 const saving = ref(false)
 const error = ref<string | null>(null)
-
-const parentOptions = computed<AnimalListItem[]>(() =>
-  store.all.filter((animal) => animal.id !== editId.value)
-)
 
 function emptyToUndefined(value: string): string | undefined {
   const trimmed = value.trim()
@@ -51,8 +45,6 @@ onMounted(async () => {
       form.sex = animal.sex
       form.breed = animal.breed ?? ''
       form.dob = animal.dob ?? ''
-      form.motherId = animal.motherId ?? ''
-      form.fatherId = animal.fatherId ?? ''
       form.status = animal.status
       form.notes = animal.notes ?? ''
     }
@@ -72,8 +64,6 @@ async function onSubmit(): Promise<void> {
       sex: form.sex,
       breed: emptyToUndefined(form.breed),
       dob: emptyToUndefined(form.dob),
-      motherId: form.motherId === '' ? undefined : form.motherId,
-      fatherId: form.fatherId === '' ? undefined : form.fatherId,
       status: form.status,
       notes: emptyToUndefined(form.notes)
     }
@@ -182,35 +172,6 @@ async function onSubmit(): Promise<void> {
             type="date"
             class="mt-1 input-field"
           />
-        </div>
-      </div>
-
-      <div class="flex gap-3">
-        <div class="flex-1">
-          <label for="mother" class="field-label">Mother</label>
-          <select
-            id="mother"
-            v-model="form.motherId"
-            class="mt-1 select-field"
-          >
-            <option value="">None</option>
-            <option v-for="option in parentOptions" :key="option.id" :value="option.id">
-              #{{ option.id }} · {{ option.colour }}
-            </option>
-          </select>
-        </div>
-        <div class="flex-1">
-          <label for="father" class="field-label">Father</label>
-          <select
-            id="father"
-            v-model="form.fatherId"
-            class="mt-1 select-field"
-          >
-            <option value="">None</option>
-            <option v-for="option in parentOptions" :key="option.id" :value="option.id">
-              #{{ option.id }} · {{ option.colour }}
-            </option>
-          </select>
         </div>
       </div>
 

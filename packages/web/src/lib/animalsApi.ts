@@ -4,7 +4,11 @@ import type {
   AnimalDetail,
   AnimalListItem,
   AnimalsListQuery,
-  AnimalUpdateInput
+  AnimalUpdateInput,
+  Lamb,
+  LambCreateInput,
+  LambPromoteInput,
+  LambUpdateInput
 } from '@sheep/core'
 import { request } from './api'
 
@@ -32,10 +36,22 @@ export const animalsApi = {
   remove(id: number): Promise<{ id: number; deleted: boolean }> {
     return request('DELETE', `/animals/${id}`)
   },
-  lambs(id: number): Promise<{ lambs: Animal[] }> {
+  lambs(id: number): Promise<{ lambs: Lamb[] }> {
     return request('GET', `/animals/${id}/lambs`)
   },
   lineage(id: number): Promise<{ lineage: Animal[] }> {
     return request('GET', `/animals/${id}/lineage`)
+  },
+  addLamb(motherId: number, input: LambCreateInput): Promise<{ lamb: Lamb }> {
+    return request('POST', `/animals/${motherId}/lambs`, input)
+  },
+  updateLamb(motherId: number, lambId: string, input: LambUpdateInput): Promise<{ lamb: Lamb }> {
+    return request('PUT', `/animals/${motherId}/lambs/${lambId}`, input)
+  },
+  deleteLamb(motherId: number, lambId: string): Promise<{ lambId: string; deleted: boolean }> {
+    return request('DELETE', `/animals/${motherId}/lambs/${lambId}`)
+  },
+  promoteLamb(motherId: number, lambId: string, input: LambPromoteInput): Promise<{ animal: Animal }> {
+    return request('POST', `/animals/${motherId}/lambs/${lambId}/promote`, input)
   }
 }

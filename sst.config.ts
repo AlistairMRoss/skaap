@@ -29,14 +29,11 @@ export default $config({
         pk: 'string',
         sk: 'string',
         gsi1pk: 'string',
-        gsi1sk: 'string',
-        gsi2pk: 'string',
-        gsi2sk: 'string'
+        gsi1sk: 'string'
       },
       primaryIndex: { hashKey: 'pk', rangeKey: 'sk' },
       globalIndexes: {
-        gsi1: { hashKey: 'gsi1pk', rangeKey: 'gsi1sk' },
-        gsi2: { hashKey: 'gsi2pk', rangeKey: 'gsi2sk' }
+        gsi1: { hashKey: 'gsi1pk', rangeKey: 'gsi1sk' }
       }
     })
 
@@ -67,6 +64,10 @@ export default $config({
     route('PUT /animals/{id}', 'update.handler')
     route('DELETE /animals/{id}', 'delete.handler')
     route('GET /animals/{id}/lambs', 'lambs.handler')
+    route('POST /animals/{id}/lambs', 'addLamb.handler')
+    route('PUT /animals/{id}/lambs/{lambId}', 'updateLamb.handler')
+    route('DELETE /animals/{id}/lambs/{lambId}', 'deleteLamb.handler')
+    route('POST /animals/{id}/lambs/{lambId}/promote', 'promoteLamb.handler')
     route('GET /animals/{id}/lineage', 'lineage.handler')
 
     const web = new sst.aws.StaticSite('SheepWeb', {

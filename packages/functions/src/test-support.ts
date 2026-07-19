@@ -1,6 +1,6 @@
-import type { Animal } from '@sheep/core'
+import type { Animal, Lamb } from '@sheep/core'
 import type { AuthedEvent } from './lib/auth'
-import { GSI1_PK, animalGsi2Sk, animalKey, motherGsiPk, padId } from './lib/keys'
+import { ALL_LAMB_GSI1_PK, GSI1_PK, animalKey, lambKey, padId } from './lib/keys'
 
 interface EventOptions {
   roles?: string[]
@@ -44,13 +44,25 @@ export function animalItem(partial: Partial<Animal> & { id: number }): Record<st
   }
   if (partial.breed !== undefined) item.breed = partial.breed
   if (partial.dob !== undefined) item.dob = partial.dob
-  if (partial.fatherId !== undefined) item.fatherId = partial.fatherId
   if (partial.notes !== undefined) item.notes = partial.notes
-  if (partial.motherId !== undefined) {
-    item.motherId = partial.motherId
-    item.gsi2pk = motherGsiPk(partial.motherId)
-    item.gsi2sk = animalGsi2Sk(partial.id)
+  if (partial.motherId !== undefined) item.motherId = partial.motherId
+  return item
+}
+
+export function lambItem(partial: Partial<Lamb> & { lambId: string; motherId: number }): Record<string, unknown> {
+  const item: Record<string, unknown> = {
+    ...lambKey(partial.motherId, partial.lambId),
+    gsi1pk: ALL_LAMB_GSI1_PK,
+    gsi1sk: partial.lambId,
+    lambId: partial.lambId,
+    motherId: partial.motherId,
+    sex: partial.sex ?? 'ewe',
+    dob: partial.dob ?? '2026-03-01',
+    promoted: partial.promoted ?? false,
+    createdAt: partial.createdAt ?? '2026-01-01T00:00:00.000Z',
+    updatedAt: partial.updatedAt ?? '2026-01-01T00:00:00.000Z'
   }
+  if (partial.promotedToId !== undefined) item.promotedToId = partial.promotedToId
   return item
 }
 

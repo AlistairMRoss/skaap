@@ -5,4 +5,3 @@ export function tableName(): string {
 }
 
 export const GSI1_NAME = 'gsi1'
-export const GSI2_NAME = 'gsi2'

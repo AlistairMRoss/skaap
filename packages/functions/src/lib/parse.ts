@@ -1,4 +1,14 @@
-import { isSex, isStatus, type AnimalCreateInput, type AnimalUpdateInput, type Sex, type Status } from '@sheep/core'
+import {
+  isSex,
+  isStatus,
+  type AnimalCreateInput,
+  type AnimalUpdateInput,
+  type LambCreateInput,
+  type LambPromoteInput,
+  type LambUpdateInput,
+  type Sex,
+  type Status
+} from '@sheep/core'
 import { badRequest } from './errors'
 
 export function parseBody(raw: string | undefined): Record<string, unknown> {
@@ -31,16 +41,18 @@ export function parseIdParam(value: string | undefined): number {
   return id
 }
 
+export function parseLambIdParam(value: string | undefined): string {
+  if (value === undefined || value.trim().length === 0) {
+    throw badRequest('lambId path parameter is required')
+  }
+  return value
+}
+
 function requireId(value: unknown, field: string): number {
   if (typeof value !== 'number' || !Number.isSafeInteger(value) || value <= 0) {
     throw badRequest(`${field} must be a positive integer`)
   }
   return value
-}
-
-function optionalId(value: unknown, field: string): number | undefined {
-  if (value === undefined || value === null) return undefined
-  return requireId(value, field)
 }
 
 function requireString(value: unknown, field: string): string {
@@ -62,6 +74,14 @@ function optionalString(value: unknown, field: string): string | undefined {
 function optionalDate(value: unknown, field: string): string | undefined {
   const str = optionalString(value, field)
   if (str === undefined) return undefined
+  if (!/^\d{4}-\d{2}-\d{2}/.test(str) || Number.isNaN(Date.parse(str))) {
+    throw badRequest(`${field} must be an ISO date (YYYY-MM-DD)`)
+  }
+  return str
+}
+
+function requireDate(value: unknown, field: string): string {
+  const str = requireString(value, field)
   if (!/^\d{4}-\d{2}-\d{2}/.test(str) || Number.isNaN(Date.parse(str))) {
     throw badRequest(`${field} must be an ISO date (YYYY-MM-DD)`)
   }
@@ -90,8 +110,6 @@ export function parseCreateInput(body: Record<string, unknown>): AnimalCreateInp
     sex: parseSex(body.sex),
     breed: optionalString(body.breed, 'breed'),
     dob: optionalDate(body.dob, 'dob'),
-    motherId: optionalId(body.motherId, 'motherId'),
-    fatherId: optionalId(body.fatherId, 'fatherId'),
     status: parseStatus(body.status),
     notes: optionalString(body.notes, 'notes')
   }
@@ -103,9 +121,27 @@ export function parseUpdateInput(body: Record<string, unknown>): AnimalUpdateInp
     sex: parseSex(body.sex),
     breed: optionalString(body.breed, 'breed'),
     dob: optionalDate(body.dob, 'dob'),
-    motherId: optionalId(body.motherId, 'motherId'),
-    fatherId: optionalId(body.fatherId, 'fatherId'),
     status: parseStatus(body.status),
+    notes: optionalString(body.notes, 'notes')
+  }
+}
+
+export function parseLambCreateInput(body: Record<string, unknown>): LambCreateInput {
+  return {
+    sex: parseSex(body.sex),
+    dob: requireDate(body.dob, 'dob')
+  }
+}
+
+export function parseLambUpdateInput(body: Record<string, unknown>): LambUpdateInput {
+  return parseLambCreateInput(body)
+}
+
+export function parseLambPromoteInput(body: Record<string, unknown>): LambPromoteInput {
+  return {
+    id: requireId(body.id, 'id'),
+    colour: requireString(body.colour, 'colour'),
+    breed: optionalString(body.breed, 'breed'),
     notes: optionalString(body.notes, 'notes')
   }
 }

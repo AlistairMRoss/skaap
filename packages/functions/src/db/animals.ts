@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import {
   DeleteCommand,
   GetCommand,
@@ -11,12 +12,24 @@ import type {
   AnimalListItem,
   AnimalsListQuery,
   AnimalUpdateInput,
+  Lamb,
+  LambCreateInput,
+  LambPromoteInput,
+  LambUpdateInput,
   Sex,
   Status
 } from '@sheep/core'
 import { ddb } from './client'
-import { GSI1_NAME, GSI2_NAME, tableName } from './table'
-import { GSI1_PK, animalGsi2Sk, animalKey, motherGsiPk, padId } from '../lib/keys'
+import { GSI1_NAME, tableName } from './table'
+import {
+  ALL_LAMB_GSI1_PK,
+  GSI1_PK,
+  LAMB_SK_PREFIX,
+  animalKey,
+  animalPk,
+  lambKey,
+  padId
+} from '../lib/keys'
 import { badRequest, conflict, notFound } from '../lib/errors'
 
 const LINEAGE_MAX_DEPTH = 20
@@ -29,7 +42,6 @@ function toAnimal(item: Record<string, unknown>): Animal {
     breed: item.breed as string | undefined,
     dob: item.dob as string | undefined,
     motherId: item.motherId as number | undefined,
-    fatherId: item.fatherId as number | undefined,
     status: item.status as Status,
     notes: item.notes as string | undefined,
     createdAt: item.createdAt as string,
@@ -51,13 +63,38 @@ function buildItem(animal: Animal): Record<string, unknown> {
   }
   if (animal.breed !== undefined) item.breed = animal.breed
   if (animal.dob !== undefined) item.dob = animal.dob
-  if (animal.fatherId !== undefined) item.fatherId = animal.fatherId
   if (animal.notes !== undefined) item.notes = animal.notes
-  if (animal.motherId !== undefined) {
-    item.motherId = animal.motherId
-    item.gsi2pk = motherGsiPk(animal.motherId)
-    item.gsi2sk = animalGsi2Sk(animal.id)
+  if (animal.motherId !== undefined) item.motherId = animal.motherId
+  return item
+}
+
+function toLamb(item: Record<string, unknown>): Lamb {
+  return {
+    lambId: item.lambId as string,
+    motherId: item.motherId as number,
+    sex: item.sex as Sex,
+    dob: item.dob as string,
+    promoted: (item.promoted as boolean | undefined) ?? false,
+    promotedToId: item.promotedToId as number | undefined,
+    createdAt: item.createdAt as string,
+    updatedAt: item.updatedAt as string
   }
+}
+
+function buildLambItem(lamb: Lamb): Record<string, unknown> {
+  const item: Record<string, unknown> = {
+    ...lambKey(lamb.motherId, lamb.lambId),
+    gsi1pk: ALL_LAMB_GSI1_PK,
+    gsi1sk: lamb.lambId,
+    lambId: lamb.lambId,
+    motherId: lamb.motherId,
+    sex: lamb.sex,
+    dob: lamb.dob,
+    promoted: lamb.promoted,
+    createdAt: lamb.createdAt,
+    updatedAt: lamb.updatedAt
+  }
+  if (lamb.promotedToId !== undefined) item.promotedToId = lamb.promotedToId
   return item
 }
 
@@ -75,8 +112,8 @@ export async function getAnimal(id: number): Promise<Animal | null> {
   return res.Item ? toAnimal(res.Item) : null
 }
 
-async function queryAllAnimals(): Promise<Animal[]> {
-  const items: Animal[] = []
+async function queryGsi1(partition: string): Promise<Record<string, unknown>[]> {
+  const items: Record<string, unknown>[] = []
   let start: Record<string, unknown> | undefined
   do {
     const res = await ddb.send(
@@ -84,15 +121,24 @@ async function queryAllAnimals(): Promise<Animal[]> {
         TableName: tableName(),
         IndexName: GSI1_NAME,
         KeyConditionExpression: 'gsi1pk = :pk',
-        ExpressionAttributeValues: { ':pk': GSI1_PK },
+        ExpressionAttributeValues: { ':pk': partition },
         ExclusiveStartKey: start
       })
     )
-    for (const item of res.Items ?? []) items.push(toAnimal(item))
+    for (const item of res.Items ?? []) items.push(item)
     start = res.LastEvaluatedKey
   } while (start !== undefined)
+  return items
+}
+
+async function queryAllAnimals(): Promise<Animal[]> {
+  const items = (await queryGsi1(GSI1_PK)).map(toAnimal)
   items.sort((a, b) => a.id - b.id)
   return items
+}
+
+async function listAllLambs(): Promise<Lamb[]> {
+  return (await queryGsi1(ALL_LAMB_GSI1_PK)).map(toLamb)
 }
 
 function matchesTerm(animal: Animal, term: string): boolean {
@@ -101,12 +147,10 @@ function matchesTerm(animal: Animal, term: string): boolean {
 }
 
 export async function listAnimals(query: AnimalsListQuery = {}): Promise<AnimalListItem[]> {
-  const all = await queryAllAnimals()
+  const [all, lambs] = await Promise.all([queryAllAnimals(), listAllLambs()])
   const counts = new Map<number, number>()
-  for (const animal of all) {
-    if (animal.motherId !== undefined) {
-      counts.set(animal.motherId, (counts.get(animal.motherId) ?? 0) + 1)
-    }
+  for (const lamb of lambs) {
+    if (!lamb.promoted) counts.set(lamb.motherId, (counts.get(lamb.motherId) ?? 0) + 1)
   }
   const term = query.q?.trim().toLowerCase()
   return all
@@ -115,24 +159,119 @@ export async function listAnimals(query: AnimalsListQuery = {}): Promise<AnimalL
     .map((animal) => ({ ...animal, lambCount: counts.get(animal.id) ?? 0 }))
 }
 
-export async function listLambs(motherId: number): Promise<Animal[]> {
-  const items: Animal[] = []
+function sortLambs(lambs: Lamb[]): Lamb[] {
+  return lambs.sort((a, b) => {
+    if (a.dob !== b.dob) return a.dob.localeCompare(b.dob)
+    return a.createdAt.localeCompare(b.createdAt)
+  })
+}
+
+export async function listLambsByMother(motherId: number): Promise<Lamb[]> {
+  const items: Lamb[] = []
   let start: Record<string, unknown> | undefined
   do {
     const res = await ddb.send(
       new QueryCommand({
         TableName: tableName(),
-        IndexName: GSI2_NAME,
-        KeyConditionExpression: 'gsi2pk = :pk',
-        ExpressionAttributeValues: { ':pk': motherGsiPk(motherId) },
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+        ExpressionAttributeValues: { ':pk': animalPk(motherId), ':prefix': LAMB_SK_PREFIX },
         ExclusiveStartKey: start
       })
     )
-    for (const item of res.Items ?? []) items.push(toAnimal(item))
+    for (const item of res.Items ?? []) items.push(toLamb(item))
     start = res.LastEvaluatedKey
   } while (start !== undefined)
-  items.sort((a, b) => a.id - b.id)
-  return items
+  return sortLambs(items)
+}
+
+export async function getLamb(motherId: number, lambId: string): Promise<Lamb | null> {
+  const res = await ddb.send(new GetCommand({ TableName: tableName(), Key: lambKey(motherId, lambId) }))
+  return res.Item ? toLamb(res.Item) : null
+}
+
+export async function createLamb(motherId: number, input: LambCreateInput): Promise<Lamb> {
+  const mother = await getAnimal(motherId)
+  if (!mother) throw notFound(`Animal ${motherId} not found`)
+  if (mother.sex !== 'ewe') throw badRequest('Only ewes can have lambs')
+
+  const now = new Date().toISOString()
+  const lamb: Lamb = {
+    lambId: randomUUID(),
+    motherId,
+    sex: input.sex,
+    dob: input.dob,
+    promoted: false,
+    createdAt: now,
+    updatedAt: now
+  }
+  await ddb.send(new PutCommand({ TableName: tableName(), Item: buildLambItem(lamb) }))
+  return lamb
+}
+
+export async function updateLamb(
+  motherId: number,
+  lambId: string,
+  input: LambUpdateInput
+): Promise<Lamb> {
+  const existing = await getLamb(motherId, lambId)
+  if (!existing) throw notFound(`Lamb ${lambId} not found`)
+  if (existing.promoted) throw conflict('This lamb has been promoted and can no longer be edited')
+
+  const lamb: Lamb = {
+    ...existing,
+    sex: input.sex,
+    dob: input.dob,
+    updatedAt: new Date().toISOString()
+  }
+  await ddb.send(new PutCommand({ TableName: tableName(), Item: buildLambItem(lamb) }))
+  return lamb
+}
+
+export async function deleteLamb(motherId: number, lambId: string): Promise<void> {
+  const existing = await getLamb(motherId, lambId)
+  if (!existing) throw notFound(`Lamb ${lambId} not found`)
+  await ddb.send(new DeleteCommand({ TableName: tableName(), Key: lambKey(motherId, lambId) }))
+}
+
+export async function promoteLamb(
+  motherId: number,
+  lambId: string,
+  input: LambPromoteInput
+): Promise<Animal> {
+  const lamb = await getLamb(motherId, lambId)
+  if (!lamb) throw notFound(`Lamb ${lambId} not found`)
+  if (lamb.promoted) throw conflict('This lamb has already been promoted')
+
+  const now = new Date().toISOString()
+  const animal: Animal = {
+    id: input.id,
+    colour: input.colour,
+    sex: lamb.sex,
+    breed: input.breed,
+    dob: lamb.dob,
+    motherId,
+    status: 'alive',
+    notes: input.notes,
+    createdAt: now,
+    updatedAt: now
+  }
+
+  try {
+    await ddb.send(
+      new PutCommand({
+        TableName: tableName(),
+        Item: buildItem(animal),
+        ConditionExpression: 'attribute_not_exists(pk)'
+      })
+    )
+  } catch (err) {
+    if (isConditionalFailure(err)) throw conflict(`Animal ${input.id} already exists`)
+    throw err
+  }
+
+  const promotedLamb: Lamb = { ...lamb, promoted: true, promotedToId: input.id, updatedAt: now }
+  await ddb.send(new PutCommand({ TableName: tableName(), Item: buildLambItem(promotedLamb) }))
+  return animal
 }
 
 async function walkMotherLine(start: Animal): Promise<Animal[]> {
@@ -159,41 +298,11 @@ export async function getLineage(id: number): Promise<Animal[]> {
 export async function getAnimalDetail(id: number): Promise<AnimalDetail> {
   const animal = await getAnimal(id)
   if (!animal) throw notFound(`Animal ${id} not found`)
-  const [lambs, lineage] = await Promise.all([listLambs(id), walkMotherLine(animal)])
+  const [lambs, lineage] = await Promise.all([listLambsByMother(id), walkMotherLine(animal)])
   return { animal, lambs, lineage }
 }
 
-async function assertReferenceExists(id: number, field: string): Promise<void> {
-  const found = await getAnimal(id)
-  if (!found) throw badRequest(`${field} ${id} does not reference an existing animal`)
-}
-
-async function assertNoMotherCycle(id: number, motherId: number): Promise<void> {
-  let current: number | undefined = motherId
-  const visited = new Set<number>()
-  let depth = 0
-  while (current !== undefined && depth < LINEAGE_MAX_DEPTH) {
-    if (current === id) {
-      throw badRequest('Setting this mother would create a cycle in the lineage')
-    }
-    if (visited.has(current)) break
-    visited.add(current)
-    const parent = await getAnimal(current)
-    current = parent?.motherId
-    depth += 1
-  }
-}
-
 export async function createAnimal(input: AnimalCreateInput): Promise<Animal> {
-  if (input.motherId !== undefined && input.motherId === input.id) {
-    throw badRequest('An animal cannot be its own mother')
-  }
-  if (input.fatherId !== undefined && input.fatherId === input.id) {
-    throw badRequest('An animal cannot be its own father')
-  }
-  if (input.motherId !== undefined) await assertReferenceExists(input.motherId, 'motherId')
-  if (input.fatherId !== undefined) await assertReferenceExists(input.fatherId, 'fatherId')
-
   const now = new Date().toISOString()
   const animal: Animal = {
     id: input.id,
@@ -201,8 +310,6 @@ export async function createAnimal(input: AnimalCreateInput): Promise<Animal> {
     sex: input.sex,
     breed: input.breed,
     dob: input.dob,
-    motherId: input.motherId,
-    fatherId: input.fatherId,
     status: input.status ?? 'alive',
     notes: input.notes,
     createdAt: now,
@@ -228,29 +335,17 @@ export async function updateAnimal(id: number, input: AnimalUpdateInput): Promis
   const existing = await getAnimal(id)
   if (!existing) throw notFound(`Animal ${id} not found`)
 
-  if (input.motherId !== undefined) {
-    if (input.motherId === id) throw badRequest('An animal cannot be its own mother')
-    await assertReferenceExists(input.motherId, 'motherId')
-    await assertNoMotherCycle(id, input.motherId)
-  }
-  if (input.fatherId !== undefined) {
-    if (input.fatherId === id) throw badRequest('An animal cannot be its own father')
-    await assertReferenceExists(input.fatherId, 'fatherId')
-  }
-
-  const now = new Date().toISOString()
   const animal: Animal = {
     id,
     colour: input.colour,
     sex: input.sex,
     breed: input.breed,
     dob: input.dob,
-    motherId: input.motherId,
-    fatherId: input.fatherId,
+    motherId: existing.motherId,
     status: input.status ?? existing.status,
     notes: input.notes,
     createdAt: existing.createdAt,
-    updatedAt: now
+    updatedAt: new Date().toISOString()
   }
 
   try {
@@ -271,9 +366,13 @@ export async function updateAnimal(id: number, input: AnimalUpdateInput): Promis
 export async function deleteAnimal(id: number): Promise<void> {
   const existing = await getAnimal(id)
   if (!existing) throw notFound(`Animal ${id} not found`)
-  const lambs = await listLambs(id)
-  if (lambs.length > 0) {
-    throw conflict(`Animal ${id} has ${lambs.length} lamb(s); reassign or remove them before deleting`)
+  const lambs = await listLambsByMother(id)
+  const active = lambs.filter((lamb) => !lamb.promoted)
+  if (active.length > 0) {
+    throw conflict(`Animal ${id} has ${active.length} lamb(s); promote or remove them before deleting`)
+  }
+  for (const lamb of lambs) {
+    await ddb.send(new DeleteCommand({ TableName: tableName(), Key: lambKey(id, lamb.lambId) }))
   }
   await ddb.send(new DeleteCommand({ TableName: tableName(), Key: animalKey(id) }))
 }

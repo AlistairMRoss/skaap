@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { AppError } from './errors'
-import { parseBody, parseCreateInput, parseIdParam, parseUpdateInput } from './parse'
+import {
+  parseBody,
+  parseCreateInput,
+  parseIdParam,
+  parseLambCreateInput,
+  parseLambIdParam,
+  parseLambPromoteInput,
+  parseUpdateInput
+} from './parse'
 
 describe('parseIdParam', () => {
   it('parses a positive integer', () => {
@@ -38,8 +46,6 @@ describe('parseCreateInput', () => {
       sex: 'ewe',
       breed: 'Merino',
       dob: '2025-04-01',
-      motherId: 2,
-      fatherId: 3,
       status: 'alive',
       notes: 'healthy'
     })
@@ -49,8 +55,6 @@ describe('parseCreateInput', () => {
       sex: 'ewe',
       breed: 'Merino',
       dob: '2025-04-01',
-      motherId: 2,
-      fatherId: 3,
       status: 'alive',
       notes: 'healthy'
     })
@@ -59,8 +63,8 @@ describe('parseCreateInput', () => {
   it('defaults optional fields to undefined', () => {
     const input = parseCreateInput({ id: 5, colour: 'black', sex: 'ram' })
     expect(input.status).toBeUndefined()
-    expect(input.motherId).toBeUndefined()
     expect(input.breed).toBeUndefined()
+    expect(input.dob).toBeUndefined()
   })
 
   it('rejects a missing id', () => {
@@ -78,15 +82,50 @@ describe('parseCreateInput', () => {
   it('rejects a malformed dob', () => {
     expect(() => parseCreateInput({ id: 1, colour: 'x', sex: 'ewe', dob: 'last spring' })).toThrow(AppError)
   })
-
-  it('rejects a non-integer motherId', () => {
-    expect(() => parseCreateInput({ id: 1, colour: 'x', sex: 'ewe', motherId: 1.5 })).toThrow(AppError)
-  })
 })
 
 describe('parseUpdateInput', () => {
   it('does not accept an id field', () => {
     const input = parseUpdateInput({ id: 99, colour: 'x', sex: 'ewe' })
     expect('id' in input).toBe(false)
+  })
+})
+
+describe('parseLambIdParam', () => {
+  it('accepts a non-empty id', () => {
+    expect(parseLambIdParam('abc-123')).toBe('abc-123')
+  })
+
+  it.each(['', '   ', undefined])('rejects %s', (value) => {
+    expect(() => parseLambIdParam(value)).toThrow(AppError)
+  })
+})
+
+describe('parseLambCreateInput', () => {
+  it('requires sex and dob', () => {
+    expect(parseLambCreateInput({ sex: 'ewe', dob: '2026-03-01' })).toEqual({ sex: 'ewe', dob: '2026-03-01' })
+  })
+
+  it('rejects a missing dob', () => {
+    expect(() => parseLambCreateInput({ sex: 'ewe' })).toThrow(AppError)
+  })
+
+  it('rejects an invalid sex', () => {
+    expect(() => parseLambCreateInput({ sex: 'goat', dob: '2026-03-01' })).toThrow(AppError)
+  })
+})
+
+describe('parseLambPromoteInput', () => {
+  it('requires a tag id and colour', () => {
+    const input = parseLambPromoteInput({ id: 42, colour: ' red ', notes: 'strong' })
+    expect(input).toEqual({ id: 42, colour: 'red', breed: undefined, notes: 'strong' })
+  })
+
+  it('rejects a missing colour', () => {
+    expect(() => parseLambPromoteInput({ id: 42 })).toThrow(AppError)
+  })
+
+  it('rejects a non-integer id', () => {
+    expect(() => parseLambPromoteInput({ id: 1.5, colour: 'red' })).toThrow(AppError)
   })
 })

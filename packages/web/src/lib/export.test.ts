@@ -11,7 +11,6 @@ const animals: AnimalListItem[] = [
     breed: 'Merino',
     dob: '2025-03-01',
     motherId: 3,
-    fatherId: 4,
     status: 'alive',
     notes: 'friendly',
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -31,11 +30,11 @@ const animals: AnimalListItem[] = [
 
 describe('animalsToRows', () => {
   it('maps every column in order', () => {
-    expect(animalsToRows(animals)[0]).toEqual([12, 'blue', 'ewe', 'Merino', '2025-03-01', 3, 4, 'alive', 2, 'friendly'])
+    expect(animalsToRows(animals)[0]).toEqual([12, 'blue', 'ewe', 'Merino', '2025-03-01', 3, 'alive', 2, 'friendly'])
   })
 
   it('renders optional fields as empty strings', () => {
-    expect(animalsToRows(animals)[1]).toEqual([13, 'red', 'ram', '', '', '', '', 'sold', 0, ''])
+    expect(animalsToRows(animals)[1]).toEqual([13, 'red', 'ram', '', '', '', 'sold', 0, ''])
   })
 })
 
@@ -51,7 +50,6 @@ describe('buildWorkbook', () => {
       'Breed',
       'DOB',
       'Mother tag',
-      'Father tag',
       'Status',
       'Lamb count',
       'Notes'

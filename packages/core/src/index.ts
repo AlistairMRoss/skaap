@@ -11,7 +11,6 @@ export interface Animal {
   breed?: string
   dob?: string
   motherId?: number
-  fatherId?: number
   status: Status
   notes?: string
   createdAt: string
@@ -24,13 +23,36 @@ export interface AnimalCreateInput {
   sex: Sex
   breed?: string
   dob?: string
-  motherId?: number
-  fatherId?: number
   status?: Status
   notes?: string
 }
 
 export type AnimalUpdateInput = Omit<AnimalCreateInput, 'id'>
+
+export interface Lamb {
+  lambId: string
+  motherId: number
+  sex: Sex
+  dob: string
+  promoted: boolean
+  promotedToId?: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface LambCreateInput {
+  sex: Sex
+  dob: string
+}
+
+export type LambUpdateInput = LambCreateInput
+
+export interface LambPromoteInput {
+  id: number
+  colour: string
+  breed?: string
+  notes?: string
+}
 
 export interface AnimalListItem extends Animal {
   lambCount: number
@@ -38,7 +60,7 @@ export interface AnimalListItem extends Animal {
 
 export interface AnimalDetail {
   animal: Animal
-  lambs: Animal[]
+  lambs: Lamb[]
   lineage: Animal[]
 }
 
