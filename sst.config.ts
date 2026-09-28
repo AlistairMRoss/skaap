@@ -20,6 +20,22 @@ export default $config({
   },
   async run() {
     const { setupAuth } = await import('./auth')
+    const { Monitor, accessLogFormat } = await import("whatwentwrong");
+
+    const alerts = new Monitor('Alerts', {
+      email: 'alistair@fluss.io',
+      requestContext: { allow: ["refresh_token"] },
+    })
+
+    new sst.aws.ApiGatewayV2("Api", {
+      transform: { stage: accessLogFormat() },
+    });
+    
+    accessLogFormat({
+      authorizerClaims: ["sub", "email", "org_id"],
+      authorizerContext: ["userId"],
+    });
+
     const allowOrigins = ['http://localhost:5173', ...PRODUCTION_ORIGINS]
 
     const auth = setupAuth({ allowOrigins, emailFromAddress: EMAIL_FROM_ADDRESS })
@@ -85,6 +101,8 @@ export default $config({
         VITE_AUTH_API_URL: auth.api.url
       }
     })
+
+    alerts.watch([api , auth.api], { metric: [400, 401, 404, '5xx'] })
 
     return {
       SheepApi: api.url,

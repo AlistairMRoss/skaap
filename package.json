@@ -34,6 +34,7 @@
     "vue-eslint-parser": "^9.4.3"
   },
   "dependencies": {
-    "sst": "4.17.1"
+    "sst": "4.17.1",
+    "whatwentwrong": "^0.4.2"
   }
 }

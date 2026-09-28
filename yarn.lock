@@ -2650,6 +2650,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"chalk@npm:^5.4.0":
+  version: 5.6.2
+  resolution: "chalk@npm:5.6.2"
+  checksum: 10c0/99a4b0f0e7991796b1e7e3f52dceb9137cae2a9dfc8fc0784a550dc4c558e15ab32ed70b14b21b52beb2679b4892b41a0aa44249bcb996f01e125d58477c6976
+  languageName: node
+  linkType: hard
+
 "check-error@npm:^2.1.1":
   version: 2.1.3
   resolution: "check-error@npm:2.1.3"
@@ -2684,6 +2691,13 @@ __metadata:
   version: 1.1.4
   resolution: "color-name@npm:1.1.4"
   checksum: 10c0/a1a3f914156960902f46f7f56bc62effc6c94e84b2cae157a526b1c1f74b677a47ec602bf68a61abfa2b42d15b7c5651c6dbe72a43af720bc588dff885b10f95
+  languageName: node
+  linkType: hard
+
+"commander@npm:^13.0.0":
+  version: 13.1.0
+  resolution: "commander@npm:13.1.0"
+  checksum: 10c0/7b8c5544bba704fbe84b7cab2e043df8586d5c114a4c5b607f83ae5060708940ed0b5bd5838cf8ce27539cde265c1cbd59ce3c8c6b017ed3eec8943e3a415164
   languageName: node
   linkType: hard
 
@@ -3811,6 +3825,19 @@ __metadata:
   version: 0.1.4
   resolution: "imurmurhash@npm:0.1.4"
   checksum: 10c0/8b51313850dd33605c6c9d3fd9638b714f4c4c40250cff658209f30d40da60f78992fb2df5dabee4acf589a6a82bbc79ad5486550754bd9ec4e3fc0d4a57d6a6
+  languageName: node
+  linkType: hard
+
+"infract@npm:^1.0.3":
+  version: 1.0.3
+  resolution: "infract@npm:1.0.3"
+  dependencies:
+    chalk: "npm:^5.4.0"
+    commander: "npm:^13.0.0"
+    typescript: "npm:^5.9.0"
+  bin:
+    infract: dist/cli.js
+  checksum: 10c0/dc176cf645c5dcc6c85d8082754a33bba09794f0aca5d35a6d5a823a8f81144de2fcacc1df538edae076fbd0e882929b4fbf1f9f13a82bb63bc1a43c8d4fcf42
   languageName: node
   linkType: hard
 
@@ -5021,6 +5048,7 @@ __metadata:
     typescript: "npm:^5.7.2"
     typescript-eslint: "npm:^8.18.1"
     vue-eslint-parser: "npm:^9.4.3"
+    whatwentwrong: "npm:^0.4.2"
   languageName: unknown
   linkType: soft
 
@@ -5424,7 +5452,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.7.2":
+"typescript@npm:^5.7.2, typescript@npm:^5.9.0":
   version: 5.9.3
   resolution: "typescript@npm:5.9.3"
   bin:
@@ -5434,7 +5462,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.7.2#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.7.2#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.9.0#optional!builtin<compat/typescript>":
   version: 5.9.3
   resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
   bin:
@@ -5763,6 +5791,19 @@ __metadata:
     typescript:
       optional: true
   checksum: 10c0/89a455e8fef36096c05e9e504457ec2210d9cd0f2966a229ec84d1d52bc98028a749c8675571fe0caaf1022c59628ef2fe627f1b4fe48f7b491a995ebd5b4ebb
+  languageName: node
+  linkType: hard
+
+"whatwentwrong@npm:^0.4.2":
+  version: 0.4.2
+  resolution: "whatwentwrong@npm:0.4.2"
+  dependencies:
+    infract: "npm:^1.0.3"
+  peerDependencies:
+    "@pulumi/aws": ^6.0.0
+    "@pulumi/pulumi": ^3.0.0
+    sst: ^3.0.0
+  checksum: 10c0/ee9815a2daeccba6128636a6baa9a3d94216141779444ed6f049f042b6c9e55b06deb3eb80744253da7e136491a09b02f2f139e2be0a7c0d96f68fa4a6005839
   languageName: node
   linkType: hard
 
