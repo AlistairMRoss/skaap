@@ -33,6 +33,6 @@ export function setupAuth(options: AuthSetupOptions): AuthModuleResult {
       minLength: 8,
       emailFromAddress: options.emailFromAddress
     },
-    handlerBasePath: 'node_modules/@alistairmross/auth/dist/src/backend/handlers'
+    handlerBasePath: 'packages/functions/src/auth-handlers'
   })
 }

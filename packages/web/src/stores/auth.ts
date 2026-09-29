@@ -1,22 +1,25 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { authClient, type AuthUser } from '../lib/authClient'
+import { browserStore, forgetUser, recallUser, rememberUser } from '../lib/lastUser'
 
 export const useAuthStore = defineStore('auth', () => {
   const accessToken = ref<string | null>(null)
   const user = ref<AuthUser | null>(null)
   const ready = ref(false)
+  const store = browserStore()
 
   const isAuthenticated = computed(() => accessToken.value !== null && user.value !== null)
   const isAdmin = computed(() => (user.value?.roles ?? []).includes('admin'))
 
   async function refresh(): Promise<boolean> {
     try {
-      const result = await authClient.refresh()
+      const result = await authClient.refresh(recallUser(store))
       accessToken.value = result.accessToken
       if (!user.value) {
         user.value = await authClient.me(result.accessToken)
       }
+      rememberUser(store, user.value)
       return true
     } catch {
       accessToken.value = null
@@ -34,6 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await authClient.login(email, password)
     accessToken.value = result.accessToken
     user.value = result.user
+    rememberUser(store, result.user)
   }
 
   async function sendCode(email: string): Promise<void> {
@@ -44,6 +48,7 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await authClient.verifyCode(email, code)
     accessToken.value = result.accessToken
     user.value = result.user
+    rememberUser(store, result.user)
     await authClient.setPassword(result.accessToken, password)
   }
 
@@ -51,6 +56,7 @@ export const useAuthStore = defineStore('auth', () => {
     const token = accessToken.value
     accessToken.value = null
     user.value = null
+    forgetUser(store)
     if (token) {
       try {
         await authClient.logout(token)

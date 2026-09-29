@@ -1,4 +1,5 @@
 import { AUTH_API_URL } from './config'
+import type { LastUser } from './lastUser'
 
 export interface AuthUser {
   userId: string
@@ -26,7 +27,7 @@ export interface AuthClient {
   verifyCode(email: string, code: string): Promise<LoginResult>
   setPassword(accessToken: string, newPassword: string): Promise<void>
   me(accessToken: string): Promise<AuthUser>
-  refresh(): Promise<RefreshResult>
+  refresh(lastUser: LastUser | null): Promise<RefreshResult>
   logout(accessToken: string): Promise<void>
 }
 
@@ -83,8 +84,11 @@ export const emailPasswordAuthClient: AuthClient = {
     })
     return data.user
   },
-  async refresh() {
-    return call<RefreshResult>('/auth/refresh', { method: 'POST' })
+  async refresh(lastUser) {
+    return call<RefreshResult>('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify(lastUser ? { lastUser } : {})
+    })
   },
   async logout(accessToken) {
     await call('/auth/logout', {

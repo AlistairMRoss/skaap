@@ -23,18 +23,16 @@ export default $config({
     const { Monitor, accessLogFormat } = await import("whatwentwrong");
 
     const alerts = new Monitor('Alerts', {
-      email: 'alistair@fluss.io',
-      requestContext: { allow: ["refresh_token"] },
+      email: 'alistair@fluss.io'
     })
 
-    new sst.aws.ApiGatewayV2("Api", {
-      transform: { stage: accessLogFormat() },
-    });
-    
-    accessLogFormat({
-      authorizerClaims: ["sub", "email", "org_id"],
-      authorizerContext: ["userId"],
-    });
+    $transform(sst.aws.ApiGatewayV2, (args) => {
+      if (!args) return
+      args.transform = {
+        ...args.transform,
+        stage: accessLogFormat({ authorizerContext: ['userId'] })
+      }
+    })
 
     const allowOrigins = ['http://localhost:5173', ...PRODUCTION_ORIGINS]
 
@@ -102,7 +100,8 @@ export default $config({
       }
     })
 
-    alerts.watch([api , auth.api], { metric: [400, 401, 404, '5xx'] })
+    alerts.watch(api, { metric: [400, 401, 404, '5xx'] })
+    alerts.watch(auth.api, { metric: [400, 404, '5xx'] })
 
     return {
       SheepApi: api.url,
